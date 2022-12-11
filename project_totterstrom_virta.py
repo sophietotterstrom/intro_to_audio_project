@@ -41,9 +41,7 @@ def load_data_filenames():
     audio_test_filenames = os.listdir(f'{BASE_ADDR}testdata/')
     audio_test_files = {}
     for filename in audio_test_filenames:
-        if "bus" in filename.lower(): audio_test_files[filename] = 0
-        elif "car" in filename.lower(): audio_test_files[filename] = 1
-        elif "tram" in filename.lower(): audio_test_files[filename] = 2
+        audio_test_files[filename] = get_class_num(filename.lower())
 
     return audio_train_files, audio_test_files
 
