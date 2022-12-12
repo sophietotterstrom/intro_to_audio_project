@@ -64,7 +64,9 @@ def feature_extraction(s,sr,nfft,nmfccs,nmels):
                                  n_fft=nfft, hop_length=hop_size)
     mel = librosa.feature.melspectrogram(y=s, sr=sr, n_fft=nfft,
                                          window='hamming', n_mels=nmels)
-    return mfccs, mel
+    rms = librosa.feature.rms(y=s, frame_length=nfft,hop_length=hop_size)
+    rms = rms.reshape((np.size(rms),))
+    return mfccs, mel, rms
 
 
 
@@ -106,14 +108,19 @@ def main():
             plt.xlabel('time [s]')
             plt.show()
 
-            mfccs, mel = feature_extraction(audioIn, fs, nfft, 30, 30)
-            plt.figure()
-            librosa.display.specshow(mfccs, x_axis='time', hop_length=hop_size)
-            plt.show()
-            plt.figure()
-            librosa.display.specshow(np.log10(mel), x_axis='time', hop_length=hop_size)
-            plt.show()
-            print(sample_class)
+            mfccs, mel, rms = feature_extraction(audioIn, fs, nfft, 30, 30)
+            #plt.figure()
+            #librosa.display.specshow(mfccs, x_axis='time', hop_length=hop_size)
+            #plt.show()
+            #plt.figure()
+            #librosa.display.specshow(np.log10(mel), x_axis='time', hop_length=hop_size)
+            #plt.show()
+            #plt.figure()
+            #plt.plot(np.arange(np.size(rms)),rms, 'b')
+            #plt.show()
+            #print(np.size(np.arange(np.size(rms))))
+            #print(np.size(rms))
+            #print("break")
 
         j = j+1
 
