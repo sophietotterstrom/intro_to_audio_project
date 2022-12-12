@@ -45,6 +45,22 @@ def load_data_filenames():
 
     return audio_train_files, audio_test_files
 
+def classifier_1nn(signal, trining_data, training_labels):
+    # Initializing the index for the optimal image and
+    # (square of) the minimum distance.
+    opt_ind = -1
+    min_dist = 0
+
+    for i in range(training_data.shape[0]):
+
+        # If the index is zero, update the distance and the optimal index.
+        # Otherwise update only if the square distance is smaller than the
+        # previous square.
+        if i == 0 or np.sum((x - trdata[i]) ** 2) < min_dist:
+            min_dist = np.sum((x - trdata[i]) ** 2)
+            opt_ind = i
+    return training_labels[opt_ind]
+
 def main():
     
     train_data_filenames, test_data_filenames = load_data_filenames()
