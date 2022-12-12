@@ -56,7 +56,7 @@ def load_data_filenames():
 
     train_files = get_dir_files(f'{BASE_ADDR}traindata/')
     test_files = get_files(f'{BASE_ADDR}testdata/')
-    validation_files = get_dir_files(f'{BASE_ADDR}validationdata/')
+    validation_files = get_files(f'{BASE_ADDR}validationdata/')
 
     return train_files, test_files, validation_files
 
