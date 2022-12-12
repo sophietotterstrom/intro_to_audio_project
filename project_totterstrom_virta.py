@@ -55,6 +55,14 @@ def load_data_filenames():
 
     return audio_train_files, audio_test_files
 
+def compute_spectrogram(s,sr,ws):
+    win_size = int(0.1 * sr1)
+    hop_size = win_size
+    S = np.abs(lr.stft(s1, n_fft=win_size, hop_length=hop_size,
+                       win_length=win_size,
+                       window=signal.windows.hamming(win_size)))
+
+    return S
 
 def classifier_1nn(signal, trining_data, training_labels):
     # Initializing the index for the optimal image and
