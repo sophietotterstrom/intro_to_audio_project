@@ -7,11 +7,23 @@ COMP.SGN.120 Intro to Audio and Speech Processing
 
 import os
 import librosa as lb
+import librosa.display
 from matplotlib import pyplot as plt
 import numpy as np
 import random
+from scipy import signal
 
 BASE_ADDR = "./" # let's assume data is in current directory
+
+def class_acc(pred, gt):
+    N = len(pred)
+    corr_class = N
+
+    for i in range(0, len(pred)):
+        if pred[i] != gt[i]:
+            corr_class = corr_class - 1
+
+    print(f'\nClassication accuracy: {corr_class * 100 / N:.2f}%')
 
 def get_class_num(class_name, reverse=False):
     """ Returns either the class number related to a class string or vise versa """
@@ -45,8 +57,36 @@ def load_data_filenames():
 
     return audio_train_files, audio_test_files
 
+def feature_extraction(s,sr,nfft,nmfccs,nmels):
+    win_size = nfft
+    hop_size = win_size // 2
+    mfccs = librosa.feature.mfcc(y=s, sr=sr, n_mfcc=nmfccs,
+                                 n_fft=nfft, hop_length=hop_size)
+    mel = librosa.feature.melspectrogram(y=s, sr=sr, n_fft=nfft,
+                                         window='hamming', n_mels=nmels)
+    return mfccs, mel
+
+
+
+def classifier_1nn(signal, trining_data, training_labels):
+    # Initializing the index for the optimal image and
+    # (square of) the minimum distance.
+    opt_ind = -1
+    min_dist = 0
+
+    for i in range(training_data.shape[0]):
+
+        # If the index is zero, update the distance and the optimal index.
+        # Otherwise update only if the square distance is smaller than the
+        # previous square.
+        if i == 0 or np.sum((x - trdata[i]) ** 2) < min_dist:
+            min_dist = np.sum((x - trdata[i]) ** 2)
+            opt_ind = i
+    return training_labels[opt_ind]
+
 def main():
-    
+    nfft = 512
+    hop_size = nfft // 2
     train_data_filenames, test_data_filenames = load_data_filenames()
 
 
@@ -65,6 +105,15 @@ def main():
             plt.grid()
             plt.xlabel('time [s]')
             plt.show()
+
+            mfccs, mel = feature_extraction(audioIn, fs, nfft, 30, 30)
+            plt.figure()
+            librosa.display.specshow(mfccs, x_axis='time', hop_length=hop_size)
+            plt.show()
+            plt.figure()
+            librosa.display.specshow(np.log10(mel), x_axis='time', hop_length=hop_size)
+            plt.show()
+            print(sample_class)
 
         j = j+1
 
