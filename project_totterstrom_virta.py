@@ -13,6 +13,16 @@ import random
 
 BASE_ADDR = "./" # let's assume data is in current directory
 
+def class_acc(pred, gt):
+    N = len(pred)
+    corr_class = N
+
+    for i in range(0, len(pred)):
+        if pred[i] != gt[i]:
+            corr_class = corr_class - 1
+
+    print(f'\nClassication accuracy: {corr_class * 100 / N:.2f}%')
+
 def get_class_num(class_name, reverse=False):
     """ Returns either the class number related to a class string or vise versa """
     
@@ -44,6 +54,7 @@ def load_data_filenames():
         audio_test_files[filename] = get_class_num(filename.lower())
 
     return audio_train_files, audio_test_files
+
 
 def classifier_1nn(signal, trining_data, training_labels):
     # Initializing the index for the optimal image and
