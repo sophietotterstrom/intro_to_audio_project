@@ -13,8 +13,57 @@ import numpy as np
 import random
 from scipy import signal
 
-BASE_ADDR = "./" # let's assume data is in current directory
+BASE_ADDR = "./" # assume data is in current directory, change if needed
 
+############################################################
+############# Functions related to loading data ############
+def get_class_num(class_name, reverse=False):
+    """ Returns either the class number related to a class string or vise versa """
+    
+    if reverse == False:
+        if class_name == "car": return 0
+        elif class_name == "tram": return 1
+    else:
+        if class_name == 0: return "car"
+        elif class_name == 1: return "tram"
+
+def get_dir_files(dirs_addr):
+    """ Returns filenames and classes of files in multiple 
+    directories under the specified directory"""
+
+    audio_files = {}
+    dirs = os.listdir(dirs_addr)    # lists different directories (car, tram)'¨
+    for dir in dirs:
+        if dir[0] != ".":           # ignore hidden directories
+            print(dir)
+            dir_files = os.listdir(f'{dirs_addr}{dir}/')
+            class_num = get_class_num(dir)
+            for file in dir_files:
+                if file[0] != ".":
+                    audio_files[f'{dirs_addr}{dir}/{file}'] = class_num
+    return audio_files
+
+def get_files(dir_addr):
+    """ Returns filenames and classes of files in given directory """
+
+    filenames = os.listdir(dir_addr)
+    test_files = {}
+    for filename in filenames:
+        test_files[filename] = get_class_num(filename.lower())
+
+def load_data_filenames():
+    """ Loads the audio data: filenames to a map with their associated class labels """
+
+    train_files = get_dir_files(f'{BASE_ADDR}traindata/')
+    test_files = get_files(f'{BASE_ADDR}testdata/')
+    validation_files = get_dir_files(f'{BASE_ADDR}validationdata/')
+
+    return train_files, test_files, validation_files
+
+
+
+############################################################
+############ Functions related to the Classifier ############
 def class_acc(pred, gt):
     N = len(pred)
     corr_class = N
@@ -25,38 +74,6 @@ def class_acc(pred, gt):
 
     print(f'\nClassication accuracy: {corr_class * 100 / N:.2f}%')
 
-def get_class_num(class_name, reverse=False):
-    """ Returns either the class number related to a class string or vise versa """
-    
-    if reverse == False:
-        if class_name == "bus": return 0
-        elif class_name == "car": return 1
-        elif class_name == "tram": return 2
-    else:
-        if class_name == 0 : return "bus"
-        elif class_name == 1: return "car"
-        elif class_name == 2: return "tram"
-
-def load_data_filenames():
-    """ Loads train and test data filenames to a map with their associated class labels """
-
-    audio_train_files = {}
-    train_dirs = os.listdir(f'{BASE_ADDR}traindata/')
-    for dir in train_dirs:
-        if dir[0] != ".":   # ignore hidden directories
-            dir_audio_train_files = os.listdir(f'{BASE_ADDR}traindata/{dir}/')
-            class_num = get_class_num(dir)
-            for file in dir_audio_train_files:
-                if file[0] != ".":
-                    audio_train_files[f'{BASE_ADDR}traindata/{dir}/{file}'] = class_num
-
-    audio_test_filenames = os.listdir(f'{BASE_ADDR}testdata/')
-    audio_test_files = {}
-    for filename in audio_test_filenames:
-        audio_test_files[filename] = get_class_num(filename.lower())
-
-    return audio_train_files, audio_test_files
-
 def feature_extraction(s,sr,nfft,nmfccs,nmels):
     win_size = nfft
     hop_size = win_size // 2
@@ -66,9 +83,7 @@ def feature_extraction(s,sr,nfft,nmfccs,nmels):
                                          window='hamming', n_mels=nmels)
     return mfccs, mel
 
-
-
-def classifier_1nn(signal, trining_data, training_labels):
+def classifier_1nn(signal, training_data, training_labels):
     # Initializing the index for the optimal image and
     # (square of) the minimum distance.
     opt_ind = -1
@@ -84,10 +99,11 @@ def classifier_1nn(signal, trining_data, training_labels):
             opt_ind = i
     return training_labels[opt_ind]
 
+
 def main():
     nfft = 512
     hop_size = nfft // 2
-    train_data_filenames, test_data_filenames = load_data_filenames()
+    train_data_filenames, test_data_filenames, validation_data_filenames = load_data_filenames()
 
 
     j = 0
@@ -97,7 +113,6 @@ def main():
             sample_class = get_class_num(train_data_filenames[filename], reverse=True)
 
             audioIn, fs=lb.load(filename, sr=None)
-
 
             plt.figure(figsize=(14, 6), dpi= 80, facecolor='w', edgecolor='k')
             plt.title(f"Fig 1: Sample from class {sample_class}")
