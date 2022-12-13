@@ -15,6 +15,8 @@ from scipy import signal
 from sklearn.metrics import mean_squared_error
 
 BASE_ADDR = "./" # assume data is in current directory, change if needed
+NFFT = 512
+HOP_SIZE = NFFT // 2
 
 ############################################################
 ############# Functions related to loading data ############
@@ -55,9 +57,11 @@ def get_files(dir_addr):
     """ Returns filenames and classes of files in given directory """
 
     filenames = os.listdir(dir_addr)
-    test_files = {}
+    test_files = []
     for filename in filenames:
-        test_files[filename] = get_class_num(filename.lower())
+        if filename[0] != ".":  # ignore hidden files
+            test_files.append(f'{dir_addr}{filename}')
+    return test_files
 
 def load_data_filenames():
     """ Loads the audio data: filenames to a map with their associated class labels """
@@ -67,7 +71,6 @@ def load_data_filenames():
     validation_files = get_files(f'{BASE_ADDR}validationdata/')
 
     return train_files, test_files, validation_files
-
 
 def prep_signal(filename):
     """ Loads the audio signal and resizes it (and padds with zeros if needed) """
@@ -93,7 +96,7 @@ def class_acc(pred, gt):
 
 
 ## Simple model for 1nn classification.
-def classifier_1nn(sample,reference):
+def classifier_1nn(sample, reference):
     optimal = - 1               # Initializing optimal class value
     smallest_distance = -1      # Current min distance to train data
 
@@ -107,18 +110,21 @@ def classifier_1nn(sample,reference):
 
 ############################################################
 ######### Functions related to feature extraction ##########
-def feature_extraction(s,sr,nfft,nmfccs,nmels):
-    win_size = nfft
+def feature_extraction(s, sr, nmfccs, nmels):
+    win_size = NFFT
     hop_size = win_size // 2
     mfccs = librosa.feature.mfcc(y=s, sr=sr, n_mfcc=nmfccs,
-                                 n_fft=nfft, hop_length=hop_size)
-    mel = librosa.feature.melspectrogram(y=s, sr=sr, n_fft=nfft,
-                                         window='hamming', n_mels=nmels)
-    rms = librosa.feature.rms(y=s, frame_length=nfft,hop_length=hop_size)
-    rms = rms.reshape((np.size(rms),))
-    return mfccs, mel, rms
+                                 n_fft=NFFT, hop_length=hop_size)
+    if nmels == None:
+        return mfccs
+    else:
+        mel = librosa.feature.melspectrogram(y=s, sr=sr, n_fft=NFFT,
+                                                window='hamming', n_mels=nmels)
+        rms = librosa.feature.rms(y=s, frame_length=NFFT, hop_length=hop_size)
+        rms = rms.reshape((np.size(rms),))
+        return mfccs, mel, rms
 
-def get_best_feature(train_data, hop_size, nfft):
+def get_best_feature(train_data):
 
     avg_feats = {} # class-tuple with 0:mfcc, 1:mel, 2:rms
 
@@ -129,7 +135,7 @@ def get_best_feature(train_data, hop_size, nfft):
         for filename in train_data[train_class]:
 
             audioIn, fs = prep_signal(filename)
-            mfccs, mel, rms = feature_extraction(audioIn, fs, nfft, 25, 25)
+            mfccs, mel, rms = feature_extraction(audioIn, fs, 25, 25)
 
             if j == 0:
                 sum_mfccs = mfccs
@@ -142,7 +148,7 @@ def get_best_feature(train_data, hop_size, nfft):
 
             #if j in randomlist:
                 #plot_signal(train_class, audioIn, fs)
-                #plot_features(hop_size, train_class, mfccs, mel, rms)
+                #plot_features(train_class, mfccs, mel, rms)
 
             j = j+1
     
@@ -152,7 +158,7 @@ def get_best_feature(train_data, hop_size, nfft):
 
         avg_feats[train_class] = ((avg_mfccs, avg_mel, avg_rms))
 
-        #plot_features(hop_size, train_class, mfcc=avg_mfccs, mel=avg_mel, rms=avg_rms)
+        #plot_features(train_class, mfcc=avg_mfccs, mel=avg_mel, rms=avg_rms)
     
     # Now we have the average values of features for both classes
     classes = [key for key in train_data]
@@ -161,6 +167,39 @@ def get_best_feature(train_data, hop_size, nfft):
     mel_mse = mean_squared_error((avg_feats[classes[0]])[1], (avg_feats[classes[1]])[1])
     rms_mse = mean_squared_error((avg_feats[classes[0]])[2], (avg_feats[classes[1]])[2])
     # TODO return the feature associated with the biggest mse
+    mses = {mffc_mse: "mfcc", mel_mse: "mel", rms_mse: "rms"}
+    return mses.get(max(mses))
+
+
+def get_mfcc_data(filenames, data_label=None):
+
+    for filename in filenames:
+        audioIn, fs = prep_signal(filename)
+        mfcc = feature_extraction(audioIn, fs, 25, nmels=None)
+        if data_label == None:
+            data_label = filenames[filename]
+
+        # TODO add mfcc and datalabel in suitable datastructure
+    
+    return None     # TODO return said datastructure for all the data
+
+def get_mfcc_training_data(train_data):
+
+    for class_label in train_data:
+        _ = get_mfcc_data(train_data[class_label], data_label=get_class_num(class_label))
+        # TODO append to total mfcc from all training classes
+    
+    return None     # return the datastructure
+
+def get_mfcc_test_data(filenames):
+    
+    for filename in filenames:
+        audioIn, fs = prep_signal(filename)
+        mfcc = feature_extraction(audioIn, fs, 25, nmels=None)
+    
+        # TODO add mfcc to suitable datastructure
+    
+    return None     # TODO return bsaid datastructure
 
 
 ############################################################
@@ -173,9 +212,9 @@ def plot_signal(class_label, audioIn, fs):
     plt.xlabel('time [s]')
     plt.show()
 
-def plot_features(hop_size, label, mfcc, mel, rms):
+def plot_features(label, mfcc, mel, rms):
     plt.figure()
-    librosa.display.specshow(mfcc, x_axis='time', hop_length=hop_size)
+    librosa.display.specshow(mfcc, x_axis='time', hop_length=HOP_SIZE)
     plt.colorbar()
     plt.title(f'Average MFCC for class {label}')
     plt.tight_layout()
@@ -183,7 +222,7 @@ def plot_features(hop_size, label, mfcc, mel, rms):
 
     plt.figure()
     plt.title(f"Average Mel Spectrogram for class {label}")
-    librosa.display.specshow(np.log10(mel), x_axis='time', hop_length=hop_size)
+    librosa.display.specshow(np.log10(mel), x_axis='time', hop_length=HOP_SIZE)
     plt.colorbar()
     plt.tight_layout()
     plt.show()
@@ -192,19 +231,23 @@ def plot_features(hop_size, label, mfcc, mel, rms):
     plt.title(f"Average RMS for class {label}")
     plt.plot(np.arange(np.size(rms)), rms, 'b')
     plt.show()
-    #print(np.size(np.arange(np.size(rms))))
-    #print(np.size(rms))
-    #print("break")
+    """print(np.size(np.arange(np.size(rms))))
+    print(np.size(rms))
+    print("break")"""
 
 
 
 def main():
 
-    nfft = 512
-    hop_size = nfft // 2
     train_data, test_data_filenames, validation_data_filenames = load_data_filenames()
 
-    get_best_feature(train_data, hop_size=hop_size, nfft=nfft)
+    best_feat = get_best_feature(train_data)
+    # NOTE we have ran this and the best result if MFCC (?????)
+    
+    _ = get_mfcc_training_data(train_data)
+
+    _ = get_mfcc_test_data(test_data_filenames)
+    _ = get_mfcc_test_data(validation_data_filenames)
 
 
 if __name__ == "__main__":
