@@ -14,8 +14,6 @@ import random
 from scipy import signal
 from sklearn.metrics import mean_squared_error
 
-from sklearn.metrics import mean_squared_error
-
 BASE_ADDR = "./" # assume data is in current directory, change if needed
 
 ############################################################
@@ -131,7 +129,7 @@ def get_best_feature(train_data, hop_size, nfft):
         for filename in train_data[train_class]:
 
             audioIn, fs = prep_signal(filename)
-            mfccs, mel, rms = feature_extraction(audioIn, fs, nfft, 30, 30)
+            mfccs, mel, rms = feature_extraction(audioIn, fs, nfft, 25, 25)
 
             if j == 0:
                 sum_mfccs = mfccs
