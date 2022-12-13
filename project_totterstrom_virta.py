@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import random
 from scipy import signal
+from sklearn.metrics import mean_squared_error
 
 BASE_ADDR = "./" # assume data is in current directory, change if needed
 
@@ -60,8 +61,6 @@ def load_data_filenames():
 
     return train_files, test_files, validation_files
 
-
-
 ############################################################
 ############ Functions related to the Classifier ############
 def class_acc(pred, gt):
@@ -85,21 +84,17 @@ def feature_extraction(s,sr,nfft,nmfccs,nmels):
     rms = rms.reshape((np.size(rms),))
     return mfccs, mel, rms
 
-def classifier_1nn(signal, training_data, training_labels):
-    # Initializing the index for the optimal image and
-    # (square of) the minimum distance.
-    opt_ind = -1
-    min_dist = 0
+## Simple model for 1nn classification.
+def classifier_1nn(sample,reference):
+    optimal = - 1               # Initializing optimal class value
+    smallest_distance = -1      # Current min distance to train data
 
-    for i in range(training_data.shape[0]):
-
-        # If the index is zero, update the distance and the optimal index.
-        # Otherwise update only if the square distance is smaller than the
-        # previous square.
-        if i == 0 or np.sum((x - trdata[i]) ** 2) < min_dist:
-            min_dist = np.sum((x - trdata[i]) ** 2)
-            opt_ind = i
-    return training_labels[opt_ind]
+    for r in reference:
+        norm = np.norm(sample-r)
+        if norm < smallest_distance: # Compare distances
+            smallest_distance = norm
+            optimal = reference[r]
+    return optimal
 
 
 def main():
@@ -114,7 +109,7 @@ def main():
         if j in randomlist:
             sample_class = get_class_num(train_data_filenames[filename], reverse=True)
 
-            audioIn, fs=lb.load(filename, sr=None)
+            audioIn, fs=lb.load(filename, sr=22050)
 
             plt.figure(figsize=(14, 6), dpi= 80, facecolor='w', edgecolor='k')
             plt.title(f"Fig 1: Sample from class {sample_class}")
@@ -123,7 +118,10 @@ def main():
             plt.xlabel('time [s]')
             plt.show()
 
-            mfccs, mel, rms = feature_extraction(audioIn, fs, nfft, 30, 30)
+            mfccs, mel, rms = feature_extraction(audioIn, fs, nfft, 25, 25)
+            print(np.shape(mfccs))
+            print(np.shape(rms))
+            print(np.shape(mel))
             #plt.figure()
             #librosa.display.specshow(mfccs, x_axis='time', hop_length=hop_size)
             #plt.show()
