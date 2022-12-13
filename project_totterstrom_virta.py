@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import random
 from scipy import signal
+from sklearn.metrics import mean_squared_error
 
 from sklearn.metrics import mean_squared_error
 
@@ -69,6 +70,7 @@ def load_data_filenames():
 
     return train_files, test_files, validation_files
 
+
 def prep_signal(filename):
     """ Loads the audio signal and resizes it (and padds with zeros if needed) """
 
@@ -76,6 +78,7 @@ def prep_signal(filename):
     audioIn = audioIn[:int(5*fs)]
     audioIn = lb.util.fix_length(audioIn, size=int(5*fs))
     return audioIn, fs
+
 
 
 ############################################################
@@ -90,21 +93,18 @@ def class_acc(pred, gt):
 
     print(f'\nClassication accuracy: {corr_class * 100 / N:.2f}%')
 
-def classifier_1nn(signal, training_data, training_labels):
-    # Initializing the index for the optimal image and
-    # (square of) the minimum distance.
-    opt_ind = -1
-    min_dist = 0
 
-    for i in range(training_data.shape[0]):
+## Simple model for 1nn classification.
+def classifier_1nn(sample,reference):
+    optimal = - 1               # Initializing optimal class value
+    smallest_distance = -1      # Current min distance to train data
 
-        # If the index is zero, update the distance and the optimal index.
-        # Otherwise update only if the square distance is smaller than the
-        # previous square.
-        if i == 0 or np.sum((x - trdata[i]) ** 2) < min_dist:
-            min_dist = np.sum((x - trdata[i]) ** 2)
-            opt_ind = i
-    return training_labels[opt_ind]
+    for r in reference:
+        norm = np.norm(sample-r)
+        if norm < smallest_distance: # Compare distances
+            smallest_distance = norm
+            optimal = reference[r]
+    return optimal
 
 
 ############################################################
@@ -207,7 +207,6 @@ def main():
     train_data, test_data_filenames, validation_data_filenames = load_data_filenames()
 
     get_best_feature(train_data, hop_size=hop_size, nfft=nfft)
-    
 
 
 if __name__ == "__main__":
