@@ -31,17 +31,24 @@ def get_dir_files(dirs_addr):
     """ Returns filenames and classes of files in multiple 
     directories under the specified directory"""
 
-    audio_files = {}
-    dirs = os.listdir(dirs_addr)    # lists different directories (car, tram)'¨
+    audio_files = []
+    class_files = {}
+
+    dirs = os.listdir(dirs_addr)    # lists different directories (car, tram)
     for dir in dirs:
         if dir[0] != ".":           # ignore hidden directories
-            print(dir)
+            
             dir_files = os.listdir(f'{dirs_addr}{dir}/')
-            class_num = get_class_num(dir)
+            #class_num = get_class_num(dir)
             for file in dir_files:
                 if file[0] != ".":
-                    audio_files[f'{dirs_addr}{dir}/{file}'] = class_num
-    return audio_files
+                    #audio_files[f'{dirs_addr}{dir}/{file}'] = class_num
+                    audio_files.append(f'{dirs_addr}{dir}/{file}')
+            
+            class_files[dir] = audio_files
+            audio_files = []
+    
+    return class_files
 
 def get_files(dir_addr):
     """ Returns filenames and classes of files in given directory """
@@ -101,43 +108,53 @@ def classifier_1nn(signal, training_data, training_labels):
             opt_ind = i
     return training_labels[opt_ind]
 
+def prep_signal(filename):
+    """ Loads the audio signal and resizes it (and padds with zeros if needed) """
+
+    audioIn, fs=lb.load(filename, sr=22050)
+    audioIn = audioIn[:int(5*fs)]
+    audioIn = lb.util.fix_length(audioIn, size=int(5*fs))
+    return audioIn, fs
+
 
 def main():
+
     nfft = 512
     hop_size = nfft // 2
-    train_data_filenames, test_data_filenames, validation_data_filenames = load_data_filenames()
+    train_data, test_data_filenames, validation_data_filenames = load_data_filenames()
 
+    for train_class in train_data:
+        for filename in train_data[train_class]:
 
-    j = 0
-    randomlist = random.sample(range(0, len(train_data_filenames)), 10)
-    for filename in train_data_filenames:
-        if j in randomlist:
-            sample_class = get_class_num(train_data_filenames[filename], reverse=True)
+            j = 0
+            randomlist = random.sample(range(0, len(train_data[train_class])), 5)
 
-            audioIn, fs=lb.load(filename, sr=None)
-
-            plt.figure(figsize=(14, 6), dpi= 80, facecolor='w', edgecolor='k')
-            plt.title(f"Fig 1: Sample from class {sample_class}")
-            plt.plot(np.linspace(0,len(audioIn) / fs,len(audioIn)),audioIn, 'b')
-            plt.grid()
-            plt.xlabel('time [s]')
-            plt.show()
-
+            audioIn, fs = prep_signal(filename)
             mfccs, mel, rms = feature_extraction(audioIn, fs, nfft, 30, 30)
-            #plt.figure()
-            #librosa.display.specshow(mfccs, x_axis='time', hop_length=hop_size)
-            #plt.show()
-            #plt.figure()
-            #librosa.display.specshow(np.log10(mel), x_axis='time', hop_length=hop_size)
-            #plt.show()
-            #plt.figure()
-            #plt.plot(np.arange(np.size(rms)),rms, 'b')
-            #plt.show()
-            #print(np.size(np.arange(np.size(rms))))
-            #print(np.size(rms))
-            #print("break")
 
-        j = j+1
+            if j in randomlist:
+
+                plt.figure(figsize=(14, 6), dpi= 80, facecolor='w', edgecolor='k')
+                plt.title(f"Fig 1: Sample from class {train_class}")
+                plt.plot(np.linspace(0,len(audioIn) / fs,len(audioIn)),audioIn, 'b')
+                plt.grid()
+                plt.xlabel('time [s]')
+                plt.show()
+
+                #plt.figure()
+                #librosa.display.specshow(mfccs, x_axis='time', hop_length=hop_size)
+                #plt.show()
+                #plt.figure()
+                #librosa.display.specshow(np.log10(mel), x_axis='time', hop_length=hop_size)
+                #plt.show()
+                #plt.figure()
+                #plt.plot(np.arange(np.size(rms)),rms, 'b')
+                #plt.show()
+                #print(np.size(np.arange(np.size(rms))))
+                #print(np.size(rms))
+                #print("break")
+
+            j = j+1
 
 
 if __name__ == "__main__":
