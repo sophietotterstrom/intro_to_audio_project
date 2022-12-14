@@ -13,6 +13,7 @@ import numpy as np
 import random
 from scipy import signal
 from sklearn.metrics import mean_squared_error
+import numpy.linalg as la
 
 BASE_ADDR = "./" # assume data is in current directory, change if needed
 NFFT = 512
@@ -101,7 +102,7 @@ def classifier_1nn(sample, reference):
     smallest_distance = -1      # Current min distance to train data
 
     for r in reference:
-        norm = np.norm(sample-r)
+        norm = np.abs((sample-r)*(sample-r))
         if norm < smallest_distance: # Compare distances
             smallest_distance = norm
             optimal = reference[r]
@@ -162,26 +163,58 @@ def get_best_feature(train_data):
     
     # Now we have the average values of features for both classes
     classes = [key for key in train_data]
-                                    # first class avg mffc                      # second class avg mffc
-    mffc_mse = mean_squared_error((avg_feats[classes[0]])[0], (avg_feats[classes[1]])[0])
-    mel_mse = mean_squared_error((avg_feats[classes[0]])[1], (avg_feats[classes[1]])[1])
-    rms_mse = mean_squared_error((avg_feats[classes[0]])[2], (avg_feats[classes[1]])[2])
+
+    # These were saved just in case.
+    # first class avg mffc                      # second class avg mffc
+    #mfcc_mse = mean_squared_error((avg_feats[classes[0]])[0], (avg_feats[classes[1]])[0])
+    #mel_mse = mean_squared_error((avg_feats[classes[0]])[1], (avg_feats[classes[1]])[1])
+    #rms_mse = mean_squared_error((avg_feats[classes[0]])[2], (avg_feats[classes[1]])[2])
+
     # TODO return the feature associated with the biggest mse
-    mses = {mffc_mse: "mfcc", mel_mse: "mel", rms_mse: "rms"}
+    # MSEs per se of these three features aren't really eligible for comparison.
+    # Instead, the feature differences can be measured using Frobenius norm.
+    mfcc_diff = (avg_feats[classes[0]])[0]-(avg_feats[classes[1]])[0]
+    mel_diff = (avg_feats[classes[0]])[1] - (avg_feats[classes[1]])[1]
+    rms_diff = (avg_feats[classes[0]])[2] - (avg_feats[classes[1]])[2]
+    mfcc_diff = mfcc_diff.reshape(np.size(mfcc_diff))
+    mel_diff = mel_diff.reshape(np.size(mel_diff))
+
+    plot_features("car", (avg_feats[classes[0]])[0],
+                  (avg_feats[classes[0]])[1], (avg_feats[classes[0]])[2])
+    plot_features("tram", (avg_feats[classes[1]])[0],
+                  (avg_feats[classes[1]])[1], (avg_feats[classes[1]])[2])
+
+    mfcc_dist = la.norm(mfcc_diff)
+    mel_dist = la.norm(mel_diff)
+
+    # Since RMS is a "pure" vector, "ord='fro'"doesn't work for it. This is
+    # fine though, since the Frobenius norm is really just a generalization of
+    # The familiar Euclidean norm into a norm of vector space of matrices.
+    rms_dist = la.norm(rms_diff)
+    mses = {mfcc_dist: "mfcc",mel_dist: "mel", rms_dist: "rms"}
+    print(f'\nFrobenius difference between class average MFCCs: {mfcc_dist:.2f}')
+    print(f'\nFrobenius difference between class average Mels: {mel_dist:.2f}')
+    print(f'\nFrobenius difference between class average RMSs {rms_dist:.2f}')
     return mses.get(max(mses))
 
 
 def get_mfcc_data(filenames, data_label=None):
 
+    # Containers for labels and respective MFCCs. The idea is to make
+    # a list of tuples.
+    labels = []
+    mfccs = []
     for filename in filenames:
         audioIn, fs = prep_signal(filename)
         mfcc = feature_extraction(audioIn, fs, 25, nmels=None)
         if data_label == None:
             data_label = filenames[filename]
-
         # TODO add mfcc and datalabel in suitable datastructure
-    
-    return None     # TODO return said datastructure for all the data
+
+        # Data collection added here
+        labels.append(data_label)
+        mfccs.append(mfcc)
+    return list(zip(mfccs, labels))
 
 def get_mfcc_training_data(train_data):
 
@@ -222,7 +255,7 @@ def plot_features(label, mfcc, mel, rms):
 
     plt.figure()
     plt.title(f"Average Mel Spectrogram for class {label}")
-    librosa.display.specshow(np.log10(mel), x_axis='time', hop_length=HOP_SIZE)
+    librosa.display.specshow(mel, x_axis='time', hop_length=HOP_SIZE)
     plt.colorbar()
     plt.tight_layout()
     plt.show()
