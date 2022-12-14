@@ -102,10 +102,10 @@ def classifier_1nn(sample, reference):
     smallest_distance = -1      # Current min distance to train data
 
     for r in reference:
-        norm = np.abs((sample-r)*(sample-r))
+        sq_norm = np.abs(sample[0]-r[0])
         if norm < smallest_distance: # Compare distances
             smallest_distance = norm
-            optimal = reference[r]
+            optimal = reference[r][1] # Class value
     return optimal
 
 
@@ -171,8 +171,12 @@ def get_best_feature(train_data):
     #rms_mse = mean_squared_error((avg_feats[classes[0]])[2], (avg_feats[classes[1]])[2])
 
     # TODO return the feature associated with the biggest mse
+
     # MSEs per se of these three features aren't really eligible for comparison.
-    # Instead, the feature differences can be measured using Frobenius norm.
+    # Instead, if matrix is transformed into a vector, the norm of the vector
+    # differences i.e., the Euclidean distance between two vectors can be
+    # computed and compared.
+
     mfcc_diff = (avg_feats[classes[0]])[0]-(avg_feats[classes[1]])[0]
     mel_diff = (avg_feats[classes[0]])[1] - (avg_feats[classes[1]])[1]
     rms_diff = (avg_feats[classes[0]])[2] - (avg_feats[classes[1]])[2]
@@ -186,12 +190,10 @@ def get_best_feature(train_data):
 
     mfcc_dist = la.norm(mfcc_diff)
     mel_dist = la.norm(mel_diff)
-
-    # Since RMS is a "pure" vector, "ord='fro'"doesn't work for it. This is
-    # fine though, since the Frobenius norm is really just a generalization of
-    # The familiar Euclidean norm into a norm of vector space of matrices.
     rms_dist = la.norm(rms_diff)
     mses = {mfcc_dist: "mfcc",mel_dist: "mel", rms_dist: "rms"}
+
+    # Just to actually see the results.
     print(f'\nFrobenius difference between class average MFCCs: {mfcc_dist:.2f}')
     print(f'\nFrobenius difference between class average Mels: {mel_dist:.2f}')
     print(f'\nFrobenius difference between class average RMSs {rms_dist:.2f}')
@@ -218,21 +220,32 @@ def get_mfcc_data(filenames, data_label=None):
 
 def get_mfcc_training_data(train_data):
 
+    # Container for MFCCs and respective labels. The idea is to make
+    # a list of tuples.
+    mfccs_with_labels = []
     for class_label in train_data:
-        _ = get_mfcc_data(train_data[class_label], data_label=get_class_num(class_label))
+        # _ = get_mfcc_data(train_data[class_label], data_label=get_class_num(class_label))
         # TODO append to total mfcc from all training classes
-    
-    return None     # return the datastructure
 
-def get_mfcc_test_data(filenames):
+
+        # Not sure if this what we're going for, but simply adding all the
+        # mfccs of current class label into the container.
+        mfccs_with_labels + get_mfcc_data(train_data[class_label], data_label=get_class_num(class_label))
     
-    for filename in filenames:
-        audioIn, fs = prep_signal(filename)
-        mfcc = feature_extraction(audioIn, fs, 25, nmels=None)
+    return mfccs_with_labels
+
+# I guess this function is maybe just the default instance of get_mfcc_data
+# with test filenames.
+def get_mfcc_test_data(filenames):
+
+
+    #for filename in filenames:
+    #    audioIn, fs = prep_signal(filename)
+    #    mfcc = feature_extraction(audioIn, fs, 25, nmels=None)
     
         # TODO add mfcc to suitable datastructure
     
-    return None     # TODO return bsaid datastructure
+    return get_mfcc_data(filenames)     # TODO return bsaid datastructure
 
 
 ############################################################
@@ -274,13 +287,22 @@ def main():
 
     train_data, test_data_filenames, validation_data_filenames = load_data_filenames()
 
-    best_feat = get_best_feature(train_data)
+    # best_feat = get_best_feature(train_data)
     # NOTE we have ran this and the best result if MFCC (?????)
     
-    _ = get_mfcc_training_data(train_data)
+    mfccs_train = get_mfcc_training_data(train_data)
 
-    _ = get_mfcc_test_data(test_data_filenames)
-    _ = get_mfcc_test_data(validation_data_filenames)
+    mfccs_test = get_mfcc_test_data(test_data_filenames)
+    mfccs_validation = get_mfcc_test_data(validation_data_filenames)
+
+    preds = []
+    correct_classes = []
+    for m in mfccs_test:
+        correct_classes.append(m[1])
+        nn = classifier_1nn(m,mfccs_train)
+        preds.append(nn)
+    class_acc(preds, correct_classes)
+
 
 
 if __name__ == "__main__":
