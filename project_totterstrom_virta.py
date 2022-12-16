@@ -22,19 +22,24 @@ HOP_SIZE = NFFT // 2
 
 ############################################################
 ############# Functions related to loading data ############
-def get_class_num(class_name, reverse=False):
-    """ Returns either the class number related to a class string or vise versa """
+def get_class_num(class_str, reverse=False):
+    """ 
+    Returns either the class number related to a class string or vise versa 
+    """
     
     if reverse == False:
-        if "car" in class_name.lower(): return 0
-        elif "tram" in class_name.lower(): return 1
+        if "car" in class_str.lower(): return 0
+        elif "tram" in class_str.lower(): return 1
     else:
-        if class_name == 0: return "car"
-        elif class_name == 1: return "tram"
+        if class_str == 0: return "car"
+        elif class_str == 1: return "tram"
 
 def get_dir_files(dirs_addr):
-    """ Returns filenames and classes of files in multiple 
-    directories under the specified directory"""
+    """ 
+    Function returns filenames and classes of files in directories 
+    @param dir_addr: the parent directory to be checked for sub directories
+                        and files 
+    """
 
     audio_files = []
     class_files = {}
@@ -44,10 +49,8 @@ def get_dir_files(dirs_addr):
         if dir[0] != ".":           # ignore hidden directories
             
             dir_files = os.listdir(f'{dirs_addr}{dir}/')
-            #class_num = get_class_num(dir)
             for file in dir_files:
-                if file[0] != ".":
-                    #audio_files[f'{dirs_addr}{dir}/{file}'] = class_num
+                if file[0] != ".":  # ignore hidden files
                     audio_files.append(f'{dirs_addr}{dir}/{file}')
             
             class_files[dir] = audio_files
@@ -75,17 +78,20 @@ def load_data_filenames():
 
     return train_files, test_files, validation_files
 
+
+############################################################
+######### Functions related to feature extraction ##########
 def prep_signal(filename):
-    """ Loads the audio signal and resizes it (and padds with zeros if needed) """
+    """ 
+    Loads the audio signal and resizes it (and padds with zeros if needed) 
+    @param filename: the name of the file from which signal is to be read
+    """
 
     audioIn, fs=lb.load(filename, sr=22050)
     audioIn = audioIn[:int(5*fs)]
     audioIn = lb.util.fix_length(audioIn, size=int(5*fs))
     return audioIn, fs
 
-
-############################################################
-######### Functions related to feature extraction ##########
 def feature_extraction(s, sr, nmfccs, nmels):
     """
     TODO: add description
@@ -211,7 +217,8 @@ def get_mfcc_data(filenames, data_label=None):
 def get_mfcc_training_data(train_data):
     """ Function used to calculate the MFCCs of training data sampels. """
     
-    mfccs_with_labels = []      # Container for MFCCs and respective labels. The idea is to make a list of tuples.
+    # Container for MFCCs and respective labels. The idea is to make a list of tuples.
+    mfccs_with_labels = []      
     for class_label in train_data:
 
         # Add all the mfccs of current class label into the container.
@@ -222,7 +229,12 @@ def get_mfcc_training_data(train_data):
 ############################################################
 ########## Functions related to plotting results ##########
 def plot_signal(class_label, audioIn, fs):
-    """ Function used to plot an audio signal """
+    """ 
+    Function used to plot an audio signal 
+    
+    @param class_label: the class the sample belongs in
+    @param audioIn: the audio signal to be plotted
+    @param fs: the sampling rate"""
 
     plt.figure(figsize=(14, 6), dpi= 80, facecolor='w', edgecolor='k')
     plt.title(f"Fig 1: Sample from class {class_label}")
@@ -232,7 +244,9 @@ def plot_signal(class_label, audioIn, fs):
     plt.show()
 
 def plot_features(label, mfcc, mel, rms):
-    """ Function used to print the features (MFCC, Mel, RMS """
+    """ 
+    Function used to print the features (MFCC, Mel, RMS) of an audio signal
+    """
 
     plt.figure()
     librosa.display.specshow(mfcc, x_axis='time', hop_length=HOP_SIZE)
@@ -311,8 +325,9 @@ def perform_classification(mfccs_train, mfccs_to_classify):
 
 def load_presaved(mfccs_train=None):
     """
-    Function can be used to reset the loaded training data,
-    or to simply return the presaved data if mffcs_train=None. 
+    Function can be used to return the presaved data, or reset the loaded data.
+
+    @param mfccs_train: if other than None, load values again for the training data
     """
 
     if mfccs_train != None:
