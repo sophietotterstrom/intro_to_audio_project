@@ -16,6 +16,7 @@ import random
 import numpy.linalg as la
 import pickle
 
+# Global variables
 BASE_ADDR = "./" # assume data is in current directory, change if needed
 NFFT = 512
 HOP_SIZE = NFFT // 2
@@ -82,13 +83,14 @@ def load_data_filenames():
 ######### Functions related to feature extraction ##########
 def prep_signal(filename):
     """ 
-    Loads the audio signal and resizes it (and padds with zeros if needed) 
+    Loads the audio signal and resizes it (and padds with zeros if needed).
+
     @param filename: the name of the file from which signal is to be read
     """
 
     audioIn, fs=lb.load(filename, sr=22050)
-    audioIn = audioIn[:int(5*fs)]
-    audioIn = lb.util.fix_length(audioIn, size=int(5*fs))
+    audioIn = audioIn[:int(5*fs)]                           # limit signal to 5 seconds
+    audioIn = lb.util.fix_length(audioIn, size=int(5*fs))   # if shorter, zero-padd to be 5 seconds
     return audioIn, fs
 
 def feature_extraction(s, sr, nmfccs, nmels):
@@ -201,6 +203,7 @@ def get_mfcc_data(filenames, data_label=None):
             the actual class label if it has already been processed
     """
 
+    # Find if we are using predetermined label
     if data_label == None: given_label = False
     else: given_label = True
 
@@ -365,7 +368,6 @@ def perform_classification(mfccs_train, mfccs_to_classify, positive=1):
     print(f'\nClassification precision: {true_positives/predicted_positives*100:.2f}%')
     print(f'\nClassification recall: {true_positives/all_observations*100:.2f}%')
 
-
 def load_presaved(mfccs_train=None):
     """
     Function can be used to return the presaved data, or reset the loaded data.
@@ -383,6 +385,7 @@ def load_presaved(mfccs_train=None):
     pkl_file.close()
     return mfccs_train_presaved
 
+
 def main():
 
     # NOTE uncomment to load data
@@ -398,7 +401,8 @@ def main():
 
     # NOTE uncomment to perform classification
     # Change around the mfccs_to_classify variable to test model with different data
-    #perform_classification(mfccs_train=mfccs_train_presaved, mfccs_to_classify=mfccs_test)
+    #mfccs_train_presaved = load_presaved()
+    #perform_classification(mfccs_train=mfccs_train_presaved, mfccs_to_classify=mfccs_validation)
 
     ############################################################
     ######### This is what was asked to be submitted! ##########
@@ -409,7 +413,7 @@ def main():
     test_files.append([f'{BASE_ADDR}{filename}', get_class_num(filename)])
     mfcc_test = get_mfcc_data(test_files)                                   # get MFCC for classification
 
-    # positive=0 since it was chosen to use car sample.
+    # positive=0 (car) since it was chosen to use car sample (else effects precision/recall unreasonably)
     perform_classification(mfccs_train=mfccs_train_presaved, mfccs_to_classify=mfcc_test, positive=0)
     
     ############################################################
