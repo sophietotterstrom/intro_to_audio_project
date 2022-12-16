@@ -87,6 +87,13 @@ def prep_signal(filename):
 ############################################################
 ############ Functions related to the Classifier ############
 def class_acc(pred, gt):
+    """
+    TODO: add description
+
+    @param pred:
+    @param gt: 
+    """
+
     N = len(pred)
     corr_class = N
 
@@ -99,6 +106,12 @@ def class_acc(pred, gt):
 
 ## Simple model for 1nn classification.
 def classifier_1nn(sample, reference):
+    """
+    TODO: add description
+    
+    @param sample:
+    @param reference:
+    """
     optimal = - 1               # Initializing optimal class value
     smallest_distance = -1     # Current min distance to train data
 
@@ -116,6 +129,15 @@ def classifier_1nn(sample, reference):
 ############################################################
 ######### Functions related to feature extraction ##########
 def feature_extraction(s, sr, nmfccs, nmels):
+    """
+    TODO: add description
+    
+    @param s:
+    @param sr:
+    @param nmfccs:
+    @param nmels:
+    """
+    
     win_size = NFFT
     hop_size = win_size // 2
     mfccs = librosa.feature.mfcc(y=s, sr=sr, n_mfcc=nmfccs,
@@ -130,27 +152,34 @@ def feature_extraction(s, sr, nmfccs, nmels):
         return mfccs, mel, rms
 
 def get_best_feature(train_data):
+    """
+    Function for analyzing which feature would be best for classifying samples.
+    Options include: MCFF, Mel-spectrogram, RMS
+    
+    @param train_data: dict containing the classes and filenames of training data
+    """
 
     avg_feats = {} # class-tuple with 0:mfcc, 1:mel, 2:rms
-
     for train_class in train_data:
 
+        # NOTE uncomment to plot random signals
+        #randomlist = random.sample(range(0, len(train_data[train_class])), 5)
         j = 0
-        randomlist = random.sample(range(0, len(train_data[train_class])), 5)
         for filename in train_data[train_class]:
 
             audioIn, fs = prep_signal(filename)
             mfccs, mel, rms = feature_extraction(audioIn, fs, 25, 25)
 
-            if j == 0:
+            if j == 0:  # we need to initialize the variables
                 sum_mfccs = mfccs
                 sum_mel = mel
                 sum_rms = rms
-            else:
+            else:       # update variables
                 sum_mfccs = sum_mfccs + mfccs
                 sum_mel = sum_mel + mel
                 sum_rms = sum_rms + rms
 
+            # NOTE uncomment to plot some signals and their features
             #if j in randomlist:
                 #plot_signal(train_class, audioIn, fs)
                 #plot_features(train_class, mfccs, mel, rms)
@@ -160,26 +189,17 @@ def get_best_feature(train_data):
         avg_mfccs = sum_mfccs/len(train_data[train_class])
         avg_mel = sum_mel/len(train_data[train_class])
         avg_rms = sum_rms/len(train_data[train_class])
-
         avg_feats[train_class] = ((avg_mfccs, avg_mel, avg_rms))
-
+        
+        # NOTE uncomment to plot the average features
         #plot_features(train_class, mfcc=avg_mfccs, mel=avg_mel, rms=avg_rms)
     
     # Now we have the average values of features for both classes
     classes = [key for key in train_data]
 
-    # These were saved just in case.
-    # first class avg mffc                      # second class avg mffc
-    #mfcc_mse = mean_squared_error((avg_feats[classes[0]])[0], (avg_feats[classes[1]])[0])
-    #mel_mse = mean_squared_error((avg_feats[classes[0]])[1], (avg_feats[classes[1]])[1])
-    #rms_mse = mean_squared_error((avg_feats[classes[0]])[2], (avg_feats[classes[1]])[2])
-
-    # TODO return the feature associated with the biggest mse
-
-    # MSEs per se of these three features aren't really eligible for comparison.
+    # NOTE MSEs per se of these three features aren't really eligible for comparison.
     # Instead, if matrix is transformed into a vector, the norm of the vector
-    # differences i.e., the Euclidean distance between two vectors can be
-    # computed and compared.
+    # differences i.e., the Euclidean distance between two vectors can be computed and compared.
 
     mfcc_diff = (avg_feats[classes[0]])[0]-(avg_feats[classes[1]])[0]
     mel_diff = (avg_feats[classes[0]])[1] - (avg_feats[classes[1]])[1]
@@ -205,50 +225,48 @@ def get_best_feature(train_data):
 
 
 def get_mfcc_data(filenames, data_label=None):
+    """ Returns the MFCC and classes of each audio signal in the
+
+    @param filenames: list of filenames of the audio signals to be processed
+    @param data_label: either None, if the class label needs to be fetched or
+            the actual class label if it has already been processed
+    """
 
     if data_label == None: given_label = False
     else: given_label = True
 
-    # Containers for labels and respective MFCCs. The idea is to make
-    # a list of tuples.
+    # Containers for labels and respective MFCCs. The idea is to make a list of tuples.
     labels = []
     mfccs = []
     for i in range(0, len(filenames)):
-        
         if given_label == False:
             audioIn, fs = prep_signal(filenames[i][0])
             data_label = filenames[i][1]
         else:
             audioIn, fs = prep_signal(filenames[i])
         mfcc = feature_extraction(audioIn, fs, 25, nmels=None)
-        # TODO add mfcc and datalabel in suitable datastructure
 
         # Data collection added here
         labels.append(data_label)
         mfccs.append(mfcc)
-
     return list(zip(mfccs, labels))
 
 def get_mfcc_training_data(train_data):
-
-    # Container for MFCCs and respective labels. The idea is to make
-    # a list of tuples.
-    mfccs_with_labels = []
-    for class_label in train_data:
-        # _ = get_mfcc_data(train_data[class_label], data_label=get_class_num(class_label))
-        # TODO append to total mfcc from all training classes
-
-
-        # Not sure if this what we're going for, but simply adding all the
-        # mfccs of current class label into the container.
-        mfccs_with_labels = mfccs_with_labels + get_mfcc_data(train_data[class_label], data_label=get_class_num(class_label))
+    """ Function used to calculate the MFCCs of training data sampels. """
     
+    mfccs_with_labels = []      # Container for MFCCs and respective labels. The idea is to make a list of tuples.
+    for class_label in train_data:
+
+        # Add all the mfccs of current class label into the container.
+        mfccs_with_labels = mfccs_with_labels + get_mfcc_data(train_data[class_label], data_label=get_class_num(class_label))
     return mfccs_with_labels
 
 
 ############################################################
 ########## Functions related to plotting results ##########
 def plot_signal(class_label, audioIn, fs):
+    """ Function used to plot an audio signal """
+
     plt.figure(figsize=(14, 6), dpi= 80, facecolor='w', edgecolor='k')
     plt.title(f"Fig 1: Sample from class {class_label}")
     plt.plot(np.linspace(0, len(audioIn)/fs, len(audioIn)), audioIn, 'b')
@@ -257,6 +275,8 @@ def plot_signal(class_label, audioIn, fs):
     plt.show()
 
 def plot_features(label, mfcc, mel, rms):
+    """ Function used to print the features (MFCC, Mel, RMS """
+
     plt.figure()
     librosa.display.specshow(mfcc, x_axis='time', hop_length=HOP_SIZE)
     plt.colorbar()
@@ -275,22 +295,18 @@ def plot_features(label, mfcc, mel, rms):
     plt.title(f"Average RMS for class {label}")
     plt.plot(np.arange(np.size(rms)), rms, 'b')
     plt.show()
-    """print(np.size(np.arange(np.size(rms))))
-    print(np.size(rms))
-    print("break")"""
 
 
 
 def main():
     train_data, test_data_filenames, validation_data_filenames = load_data_filenames()
 
+    # NOTE this function performs analysis on which feature is the best for classifying
+    # between cars and trams. Our result is MFCC (see report for further details).
     # best_feat = get_best_feature(train_data)
-    # NOTE we have ran this and the best result if MFCC (?????)
     
     mfccs_train = get_mfcc_training_data(train_data)
-
     mfccs_test = get_mfcc_data(test_data_filenames, data_label=None)
-
     mfccs_validation = get_mfcc_data(validation_data_filenames)
 
     preds = []
