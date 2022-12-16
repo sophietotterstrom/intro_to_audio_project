@@ -103,7 +103,7 @@ def classifier_1nn(sample, reference):
     smallest_distance = -1      # Current min distance to train data
 
     for r in reference:
-        norm = np.abs(sample[0]-r[0])
+        norm = la.norm(sample[0]-r[0])
         if norm < smallest_distance: # Compare distances
             smallest_distance = norm
             optimal = reference[r][1] # Class value
@@ -238,7 +238,7 @@ def get_mfcc_training_data(train_data):
 
         # Not sure if this what we're going for, but simply adding all the
         # mfccs of current class label into the container.
-        mfccs_with_labels + get_mfcc_data(train_data[class_label], data_label=get_class_num(class_label))
+        mfccs_with_labels = mfccs_with_labels + get_mfcc_data(train_data[class_label], data_label=get_class_num(class_label))
     
     return mfccs_with_labels
 
