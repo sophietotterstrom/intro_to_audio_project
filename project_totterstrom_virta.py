@@ -93,20 +93,26 @@ def prep_signal(filename):
 
 def feature_extraction(s, sr, nmfccs, nmels):
     """
-    TODO: add description
+    A function for extracting desired features of a given sample.
     
-    @param s:
-    @param sr:
-    @param nmfccs:
-    @param nmels:
+    @param s: A sample for which the data will be extracted.
+    @param sr: Integer value sample rate used.
+    @param nmfccs: Integer value number of MFCCs.
+    @param nmels: Integer value number of Mel filters.
     """
     
     win_size = NFFT
     hop_size = win_size // 2
+
+    # The MFCC
     mfccs = librosa.feature.mfcc(y=s, sr=sr, n_mfcc=nmfccs,
                                  n_fft=NFFT, hop_length=hop_size)
+
+    # If nmels isn't specified, just return the mfccs.
     if nmels == None:
         return mfccs
+
+    # Otherwise compute the Mels and RMS and return the values.
     else:
         mel = librosa.feature.melspectrogram(y=s, sr=sr, n_fft=NFFT,
                                                 window='hamming', n_mels=nmels)
@@ -117,7 +123,7 @@ def feature_extraction(s, sr, nmfccs, nmels):
 def get_best_feature(train_data):
     """
     Function for analyzing which feature would be best for classifying samples.
-    Options include: MCFF, Mel-spectrogram, RMS
+    Options include: MFCC, Mel-spectrogram, RMS
     
     @param train_data: dict containing the classes and filenames of training data
     """
