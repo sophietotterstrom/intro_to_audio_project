@@ -242,19 +242,6 @@ def get_mfcc_training_data(train_data):
     
     return mfccs_with_labels
 
-# I guess this function is maybe just the default instance of get_mfcc_data
-# with test filenames.
-#def get_mfcc_test_data(filenames):
-
-
-    #for filename in filenames:
-    #    audioIn, fs = prep_signal(filename)
-    #    mfcc = feature_extraction(audioIn, fs, 25, nmels=None)
-    
-        # TODO add mfcc to suitable datastructure
-    
-    #return get_mfcc_data(filenames)     # TODO return bsaid datastructure
-
 
 ############################################################
 ########## Functions related to plotting results ##########
