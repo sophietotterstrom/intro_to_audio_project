@@ -317,13 +317,22 @@ def classifier_1nn(sample, reference):
             optimal = r[1] # Class value
     return optimal
 
-def perform_classification(mfccs_train, mfccs_to_classify):
+def perform_classification(mfccs_train, mfccs_to_classify, positive=1):
     """
-    TODO: add description
+    A function that does the classification of signals based on their MFCCs
+    by looking at the nearest neighbour of each MFCC in the training data.
 
-    @param mfccs_train: 
-    @param mfccs_to_classify: 
+    @param mfccs_train: A list of tuples where the tuple has MFCC as a first
+    element and the corresponding class as the second. This is the list of
+    training data.
+    @param mfccs_to_classify: A list of tuples where the tuple has MFCC as a first
+    element and the corresponding class as the second. This is the list that is
+    to be classified.
+    @param positive: An integer defining which class will be regarder as the
+    "positive" in the classification in order to compute recall and precision.
     """
+
+    # Initializing containers and counter values for positive samples.
     preds = []
     correct_classes = []
     predicted_positives = 0
@@ -331,14 +340,19 @@ def perform_classification(mfccs_train, mfccs_to_classify):
     all_observations = 0
     for m in mfccs_to_classify:
         correct_classes.append(m[1])
-        if m[1] == 1:
-            all_observations = all_observations + 1
-        nn = classifier_1nn(m,mfccs_train)
-        if nn == 1:
+        if m[1] == positive:
+            all_observations = all_observations + 1 # Update the total observations.
+        prediction = classifier_1nn(m,mfccs_train)
+
+        # If the prediction matches the positive class label, update the number
+        # of positive predictions.
+        if prediction == positive:
             predicted_positives = predicted_positives + 1
-        if nn == 1 and m[1] == 1:
+
+        # If the prediction is a true positive, update the corresponding number.
+        if prediction == positive and m[1] == positive:
             true_positives = true_positives + 1
-        preds.append(nn)
+        preds.append(prediction)
 
     # Get classification metrics.
     class_acc(preds, correct_classes)
@@ -388,7 +402,9 @@ def main():
     test_files = []                                                         # made functions work for a list of data
     test_files.append([f'{BASE_ADDR}{filename}', get_class_num(filename)])
     mfcc_test = get_mfcc_data(test_files)                                   # get MFCC for classification
-    perform_classification(mfccs_train=mfccs_train_presaved, mfccs_to_classify=mfcc_test)
+
+    # positive=0 since it was chosen to use car sample.
+    perform_classification(mfccs_train=mfccs_train_presaved, mfccs_to_classify=mfcc_test, positive=0)
     
     ############################################################
     
