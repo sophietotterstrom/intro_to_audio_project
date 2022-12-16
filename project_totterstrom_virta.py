@@ -1,8 +1,10 @@
 """
 COMP.SGN.120 Intro to Audio and Speech Processing
 
-@author Sophie Tötterström
-@author Aleksi Virta
+Project for binary classification of audio samples of vehicles (cars, trams).
+
+@author Sophie Tötterström, sophie.totterstrom@tuni.fi, 50102822
+@author Aleksi Virta, aleksi.virta@tuni.fi, K425032
 """
 
 import os
@@ -11,8 +13,6 @@ import librosa.display
 from matplotlib import pyplot as plt
 import numpy as np
 import random
-from scipy import signal
-from sklearn.metrics import mean_squared_error
 import numpy.linalg as la
 
 BASE_ADDR = "./" # assume data is in current directory, change if needed
@@ -81,49 +81,6 @@ def prep_signal(filename):
     audioIn = audioIn[:int(5*fs)]
     audioIn = lb.util.fix_length(audioIn, size=int(5*fs))
     return audioIn, fs
-
-
-
-############################################################
-############ Functions related to the Classifier ############
-def class_acc(pred, gt):
-    """
-    TODO: add description
-
-    @param pred:
-    @param gt: 
-    """
-
-    N = len(pred)
-    corr_class = N
-
-    for i in range(0, len(pred)):
-        if pred[i] != gt[i]:
-            corr_class = corr_class - 1
-
-    print(f'\nClassication accuracy: {corr_class * 100 / N:.2f}%')
-
-
-## Simple model for 1nn classification.
-def classifier_1nn(sample, reference):
-    """
-    TODO: add description
-    
-    @param sample:
-    @param reference:
-    """
-    optimal = - 1               # Initializing optimal class value
-    smallest_distance = -1     # Current min distance to train data
-
-    for r in reference:
-        norm = la.norm(sample[0]-r[0])
-        if smallest_distance == -1:
-            smallest_distance = norm
-            optimal = 0
-        elif norm <= smallest_distance: # Compare distances
-            smallest_distance = norm
-            optimal = r[1] # Class value
-    return optimal
 
 
 ############################################################
@@ -297,28 +254,78 @@ def plot_features(label, mfcc, mel, rms):
     plt.show()
 
 
+############################################################
+############ Functions related to the Classifier ############
+def class_acc(pred, gt):
+    """
+    TODO: add description
+
+    @param pred:
+    @param gt: 
+    """
+
+    N = len(pred)
+    corr_class = N
+
+    for i in range(0, len(pred)):
+        if pred[i] != gt[i]:
+            corr_class = corr_class - 1
+
+    print(f'\nClassication accuracy: {corr_class * 100 / N:.2f}%')
+
+def classifier_1nn(sample, reference):
+    """
+    Simple model for 1nn classification.
+    TODO: add description
+    
+    @param sample:
+    @param reference:
+    """
+    optimal = - 1               # Initializing optimal class value
+    smallest_distance = -1     # Current min distance to train data
+
+    for r in reference:
+        norm = la.norm(sample[0]-r[0])
+        if smallest_distance == -1:
+            smallest_distance = norm
+            optimal = 0
+        elif norm <= smallest_distance: # Compare distances
+            smallest_distance = norm
+            optimal = r[1] # Class value
+    return optimal
+
+def perform_classification(mfccs_train, mfccs_to_classify):
+    """
+    TODO: add description
+
+    @param mfccs_train: 
+    @param mfccs_to_classify: 
+    """
+    preds = []
+    correct_classes = []
+    for m in mfccs_to_classify:
+        correct_classes.append(m[1])
+        nn = classifier_1nn(m,mfccs_train)
+        preds.append(nn)
+    class_acc(preds, correct_classes)
+
 
 def main():
+
     train_data, test_data_filenames, validation_data_filenames = load_data_filenames()
 
-    # NOTE this function performs analysis on which feature is the best for classifying
+    # NOTE uncomment to perform analysis on which feature is the best for classifying
     # between cars and trams. Our result is MFCC (see report for further details).
     # best_feat = get_best_feature(train_data)
     
+    # Load the MFCCs of test, training, and validation data.
     mfccs_train = get_mfcc_training_data(train_data)
-    mfccs_test = get_mfcc_data(test_data_filenames, data_label=None)
+    mfccs_test = get_mfcc_data(test_data_filenames)
     mfccs_validation = get_mfcc_data(validation_data_filenames)
 
-    preds = []
-    correct_classes = []
-    for m in mfccs_test:
-        correct_classes.append(m[1])
-        print(m[1])
-        nn = classifier_1nn(m,mfccs_train)
-        preds.append(nn)
-        print(nn)
-        print("break")
-    class_acc(preds, correct_classes)
+    # Change around the mfccs_to_classify variable to test model with different data
+    perform_classification(mfccs_train=mfccs_train, mfccs_to_classify=mfccs_test)
+    
 
 if __name__ == "__main__":
     main()
