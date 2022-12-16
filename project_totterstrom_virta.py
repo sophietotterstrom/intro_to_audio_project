@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import random
 import numpy.linalg as la
+import pickle
 
 BASE_ADDR = "./" # assume data is in current directory, change if needed
 NFFT = 512
@@ -180,7 +181,6 @@ def get_best_feature(train_data):
     print(f'\nFrobenius difference between class average RMSs {rms_dist:.2f}')
     return mses.get(max(mses))
 
-
 def get_mfcc_data(filenames, data_label=None):
     """ Returns the MFCC and classes of each audio signal in the
 
@@ -309,22 +309,50 @@ def perform_classification(mfccs_train, mfccs_to_classify):
         preds.append(nn)
     class_acc(preds, correct_classes)
 
+def load_presaved(mfccs_train=None):
+    """
+    Function can be used to reset the loaded training data,
+    or to simply return the presaved data if mffcs_train=None. 
+    """
+
+    if mfccs_train != None:
+        output = open('weigths.pkl', 'wb')
+        pickle.dump(mfccs_train, output)
+        output.close()
+    
+    pkl_file = open('weigths.pkl', 'rb')
+    mfccs_train_presaved = pickle.load(pkl_file)
+    pkl_file.close()
+    return mfccs_train_presaved
 
 def main():
 
-    train_data, test_data_filenames, validation_data_filenames = load_data_filenames()
+    # NOTE uncomment to load data
+    #train_data, test_data_filenames, validation_data_filenames = load_data_filenames()
 
-    # NOTE uncomment to perform analysis on which feature is the best for classifying
-    # between cars and trams. Our result is MFCC (see report for further details).
+    # NOTE uncomment to perform analysis on which feature is the best for classifying. Our result is MFCC (see report for further details).
     # best_feat = get_best_feature(train_data)
     
-    # Load the MFCCs of test, training, and validation data.
-    mfccs_train = get_mfcc_training_data(train_data)
-    mfccs_test = get_mfcc_data(test_data_filenames)
-    mfccs_validation = get_mfcc_data(validation_data_filenames)
+    # NOTE uncomment to load the MFCCs of test, training, and validation data.
+    #mfccs_train = get_mfcc_training_data(train_data)
+    #mfccs_test = get_mfcc_data(test_data_filenames)
+    #mfccs_validation = get_mfcc_data(validation_data_filenames)
 
+    # NOTE uncomment to perform classification
     # Change around the mfccs_to_classify variable to test model with different data
-    perform_classification(mfccs_train=mfccs_train, mfccs_to_classify=mfccs_test)
+    #perform_classification(mfccs_train=mfccs_train_presaved, mfccs_to_classify=mfccs_test)
+    
+    ############################################################
+    ######### This is what was asked to be submitted! ##########
+
+    mfccs_train_presaved = load_presaved()                                  # load presaved values ("weigths") 
+    filename = 'car8.wav'                                                   # the example value to be classified
+    test_files = []                                                         # made functions work for a list of data
+    test_files.append([f'{BASE_ADDR}{filename}', get_class_num(filename)])
+    mfcc_test = get_mfcc_data(test_files)                                   # get MFCC for classification
+    perform_classification(mfccs_train=mfccs_train_presaved, mfccs_to_classify=mfcc_test)
+    
+    ############################################################
     
 
 if __name__ == "__main__":
