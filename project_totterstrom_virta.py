@@ -272,16 +272,20 @@ def plot_features(label, mfcc, mel, rms):
 ############ Functions related to the Classifier ############
 def class_acc(pred, gt):
     """
-    TODO: add description
+    A function for computing the classification accuracy based on
+    given lists of predicted values and the actual values.
 
-    @param pred:
-    @param gt: 
+    @param pred: list of predicted class labels.
+    @param gt: list of correct class labels.
     """
 
     N = len(pred)
     corr_class = N
 
     for i in range(0, len(pred)):
+
+        # If the class labels don't match, decrease of the number of correct
+        # predictions.
         if pred[i] != gt[i]:
             corr_class = corr_class - 1
 
@@ -289,7 +293,6 @@ def class_acc(pred, gt):
 
 def classifier_1nn(sample, reference):
     """
-    Simple model for 1nn classification.
     TODO: add description
     
     @param sample:
