@@ -100,13 +100,15 @@ def class_acc(pred, gt):
 ## Simple model for 1nn classification.
 def classifier_1nn(sample, reference):
     optimal = - 1               # Initializing optimal class value
-    smallest_distance = -1      # Current min distance to train data
+    smallest_distance = -1     # Current min distance to train data
 
     for r in reference:
         norm = la.norm(sample[0]-r[0])
-        if norm < smallest_distance: # Compare distances
+        if smallest_distance == -1:
             smallest_distance = norm
-            optimal = reference[r][1] # Class value
+        elif norm < smallest_distance: # Compare distances
+            smallest_distance = norm
+            optimal = r[1] # Class value
     return optimal
 
 
@@ -279,7 +281,6 @@ def plot_features(label, mfcc, mel, rms):
 
 
 def main():
-
     train_data, test_data_filenames, validation_data_filenames = load_data_filenames()
 
     # best_feat = get_best_feature(train_data)
@@ -295,11 +296,12 @@ def main():
     correct_classes = []
     for m in mfccs_train:
         correct_classes.append(m[1])
+        print(m[1])
         nn = classifier_1nn(m,mfccs_train)
         preds.append(nn)
+        print(nn)
+        print("break")
     class_acc(preds, correct_classes)
-
-
 
 if __name__ == "__main__":
     main()
