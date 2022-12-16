@@ -25,8 +25,8 @@ def get_class_num(class_name, reverse=False):
     """ Returns either the class number related to a class string or vise versa """
     
     if reverse == False:
-        if class_name == "car": return 0
-        elif class_name == "tram": return 1
+        if "car" in class_name.lower(): return 0
+        elif "tram" in class_name.lower(): return 1
     else:
         if class_name == 0: return "car"
         elif class_name == 1: return "tram"
@@ -61,7 +61,8 @@ def get_files(dir_addr):
     test_files = []
     for filename in filenames:
         if filename[0] != ".":  # ignore hidden files
-            test_files.append(f'{dir_addr}{filename}')
+            class_label = get_class_num(filename)
+            test_files.append([f'{dir_addr}{filename}', class_label])
     return test_files
 
 def load_data_filenames():
@@ -102,7 +103,7 @@ def classifier_1nn(sample, reference):
     smallest_distance = -1      # Current min distance to train data
 
     for r in reference:
-        sq_norm = np.abs(sample[0]-r[0])
+        norm = np.abs(sample[0]-r[0])
         if norm < smallest_distance: # Compare distances
             smallest_distance = norm
             optimal = reference[r][1] # Class value
@@ -202,20 +203,27 @@ def get_best_feature(train_data):
 
 def get_mfcc_data(filenames, data_label=None):
 
+    if data_label == None: given_label = False
+    else: given_label = True
+
     # Containers for labels and respective MFCCs. The idea is to make
     # a list of tuples.
     labels = []
     mfccs = []
-    for filename in filenames:
-        audioIn, fs = prep_signal(filename)
+    for i in range(0, len(filenames)):
+        
+        if given_label == False:
+            audioIn, fs = prep_signal(filenames[i][0])
+            data_label = filenames[i][1]
+        else:
+            audioIn, fs = prep_signal(filenames[i])
         mfcc = feature_extraction(audioIn, fs, 25, nmels=None)
-        if data_label == None:
-            data_label = filenames[filename]
         # TODO add mfcc and datalabel in suitable datastructure
 
         # Data collection added here
         labels.append(data_label)
         mfccs.append(mfcc)
+
     return list(zip(mfccs, labels))
 
 def get_mfcc_training_data(train_data):
@@ -236,7 +244,7 @@ def get_mfcc_training_data(train_data):
 
 # I guess this function is maybe just the default instance of get_mfcc_data
 # with test filenames.
-def get_mfcc_test_data(filenames):
+#def get_mfcc_test_data(filenames):
 
 
     #for filename in filenames:
@@ -245,7 +253,7 @@ def get_mfcc_test_data(filenames):
     
         # TODO add mfcc to suitable datastructure
     
-    return get_mfcc_data(filenames)     # TODO return bsaid datastructure
+    #return get_mfcc_data(filenames)     # TODO return bsaid datastructure
 
 
 ############################################################
@@ -292,12 +300,13 @@ def main():
     
     mfccs_train = get_mfcc_training_data(train_data)
 
-    mfccs_test = get_mfcc_test_data(test_data_filenames)
-    mfccs_validation = get_mfcc_test_data(validation_data_filenames)
+    mfccs_test = get_mfcc_data(test_data_filenames, data_label=None)
+
+    mfccs_validation = get_mfcc_data(validation_data_filenames)
 
     preds = []
     correct_classes = []
-    for m in mfccs_test:
+    for m in mfccs_train:
         correct_classes.append(m[1])
         nn = classifier_1nn(m,mfccs_train)
         preds.append(nn)
