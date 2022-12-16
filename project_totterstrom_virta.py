@@ -285,7 +285,7 @@ def class_acc(pred, gt):
         if pred[i] != gt[i]:
             corr_class = corr_class - 1
 
-    print(f'\nClassication accuracy: {corr_class * 100 / N:.2f}%')
+    print(f'\nClassification accuracy: {corr_class * 100 / N:.2f}%')
 
 def classifier_1nn(sample, reference):
     """
@@ -317,11 +317,25 @@ def perform_classification(mfccs_train, mfccs_to_classify):
     """
     preds = []
     correct_classes = []
+    predicted_positives = 0
+    true_positives = 0
+    all_observations = 0
     for m in mfccs_to_classify:
         correct_classes.append(m[1])
+        if m[1] == 1:
+            all_observations = all_observations + 1
         nn = classifier_1nn(m,mfccs_train)
+        if nn == 1:
+            predicted_positives = predicted_positives + 1
+        if nn == 1 and m[1] == 1:
+            true_positives = true_positives + 1
         preds.append(nn)
+
+    # Get classification metrics.
     class_acc(preds, correct_classes)
+    print(f'\nClassification precision: {true_positives/predicted_positives*100:.2f}%')
+    print(f'\nClassification recall: {true_positives/all_observations*100:.2f}%')
+
 
 def load_presaved(mfccs_train=None):
     """
@@ -356,11 +370,11 @@ def main():
     # NOTE uncomment to perform classification
     # Change around the mfccs_to_classify variable to test model with different data
     #perform_classification(mfccs_train=mfccs_train_presaved, mfccs_to_classify=mfccs_test)
-    
+
     ############################################################
     ######### This is what was asked to be submitted! ##########
 
-    mfccs_train_presaved = load_presaved()                                  # load presaved values ("weigths") 
+    mfccs_train_presaved = load_presaved()                                  # load presaved values ("weigths")
     filename = 'car8.wav'                                                   # the example value to be classified
     test_files = []                                                         # made functions work for a list of data
     test_files.append([f'{BASE_ADDR}{filename}', get_class_num(filename)])
