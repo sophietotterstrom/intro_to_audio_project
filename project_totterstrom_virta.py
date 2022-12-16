@@ -293,19 +293,25 @@ def class_acc(pred, gt):
 
 def classifier_1nn(sample, reference):
     """
-    TODO: add description
+    A nearest neighbour classifier that classifies a sample looking at
+    the nearest item in the reference data.
     
-    @param sample:
-    @param reference:
+    @param sample: An array of values. In our case most likely a matrix.
+    @param reference: A list of tuples where the tuples have the reference
+    element as the first value and class label as the second.
     """
     optimal = - 1               # Initializing optimal class value
     smallest_distance = -1     # Current min distance to train data
 
     for r in reference:
         norm = la.norm(sample[0]-r[0])
+
+        # When computing the first distance, automatically update the
+        # smallest distance to this one. Note that this also updates
+        # updates the predicted value.
         if smallest_distance == -1:
             smallest_distance = norm
-            optimal = 0
+            optimal = r[1]
         elif norm <= smallest_distance: # Compare distances
             smallest_distance = norm
             optimal = r[1] # Class value
