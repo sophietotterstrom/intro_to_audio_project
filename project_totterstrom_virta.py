@@ -106,7 +106,8 @@ def classifier_1nn(sample, reference):
         norm = la.norm(sample[0]-r[0])
         if smallest_distance == -1:
             smallest_distance = norm
-        elif norm < smallest_distance: # Compare distances
+            optimal = 0
+        elif norm <= smallest_distance: # Compare distances
             smallest_distance = norm
             optimal = r[1] # Class value
     return optimal
@@ -294,7 +295,7 @@ def main():
 
     preds = []
     correct_classes = []
-    for m in mfccs_train:
+    for m in mfccs_test:
         correct_classes.append(m[1])
         print(m[1])
         nn = classifier_1nn(m,mfccs_train)
