@@ -37,8 +37,7 @@ def get_class_num(class_str, reverse=False):
 def get_dir_files(dirs_addr):
     """ 
     Function returns filenames and classes of files in directories 
-    @param dir_addr: the parent directory to be checked for sub directories
-                        and files 
+    @param dir_addr: the parent directory to be checked for sub directories and files 
     """
 
     audio_files = []
@@ -188,7 +187,8 @@ def get_best_feature(train_data):
     return mses.get(max(mses))
 
 def get_mfcc_data(filenames, data_label=None):
-    """ Returns the MFCC and classes of each audio signal in the
+    """ 
+    Returns the MFCC and classes of each audio signal from given filenames.
 
     @param filenames: list of filenames of the audio signals to be processed
     @param data_label: either None, if the class label needs to be fetched or
